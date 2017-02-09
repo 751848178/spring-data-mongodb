@@ -170,6 +170,12 @@ class ExpressionEvaluatingParameterBinder {
 
 		} else {
 
+			if (isExpression) {
+
+				buffer.deleteCharAt(quotationMarkIndex);
+				return;
+			}
+
 			if (quotationMark == '\'') {
 				buffer.replace(quotationMarkIndex, quotationMarkIndex + 1, "\"");
 			}
@@ -199,7 +205,7 @@ class ExpressionEvaluatingParameterBinder {
 				return (String) value;
 			}
 
-			return QuotedString.unquote(JSON.serialize(value));
+			return binding.isExpression() ? JSON.serialize(value) : QuotedString.unquote(JSON.serialize(value));
 		}
 
 		if (value instanceof byte[]) {
@@ -211,6 +217,10 @@ class ExpressionEvaluatingParameterBinder {
 			}
 
 			return base64representation;
+		}
+
+		if (binding.isExpression() && value instanceof String) {
+			return "\"" + JSON.serialize(value) + "\"";
 		}
 
 		return JSON.serialize(value);
@@ -271,16 +281,17 @@ class ExpressionEvaluatingParameterBinder {
 			if (!StringUtils.hasText(rawPlaceholder)) {
 
 				rawPlaceholder = matcher.group();
-				if(rawPlaceholder.matches(".*\\d$")) {
+				if (rawPlaceholder.matches(".*\\d$")) {
 					suffix = "";
 				} else {
 					int index = rawPlaceholder.replaceAll("[^\\?a-zA-Z0-9]*$", "").length() - 1;
-					if(index > 1) {
+					if (index > 1) {
 						suffix = rawPlaceholder.substring(index);
 					}
 				}
 				if (QuotedString.endsWithQuote(rawPlaceholder)) {
-					rawPlaceholder = rawPlaceholder.substring(0, rawPlaceholder.length() - (StringUtils.hasText(suffix) ? suffix.length() : 1));
+					rawPlaceholder = rawPlaceholder.substring(0,
+							rawPlaceholder.length() - (StringUtils.hasText(suffix) ? suffix.length() : 1));
 				}
 			}
 

@@ -485,6 +485,16 @@ public class StringBasedMongoQueryUnitTests {
 				is((DBObject) new BasicDBObject().append("arg0", "calamity").append("arg1", "regalias")));
 	}
 
+	@Test // DATAMONGO-1605
+	public void findUsingSpelShouldRetainParameterType() throws Exception {
+
+		StringBasedMongoQuery mongoQuery = createQueryForMethod("findByUsingSpel", Object.class);
+		ConvertingParameterAccessor accessor = StubParameterAccessor.getAccessor(converter, 100.01D);
+
+		org.springframework.data.mongodb.core.query.Query query = mongoQuery.createQuery(accessor);
+		assertThat(query.getQueryObject(), is((DBObject) new BasicDBObject().append("arg0", 100.01D)));
+	}
+
 	private StringBasedMongoQuery createQueryForMethod(String name, Class<?>... parameters) throws Exception {
 
 		Method method = SampleRepository.class.getMethod(name, parameters);
@@ -570,5 +580,8 @@ public class StringBasedMongoQueryUnitTests {
 
 		@Query("{ 'arg0' : '?0', 'arg1' : '?1s' }")
 		List<Person> findByWhenQuotedAndSomeStuffAppended(String arg0, String arg1);
+
+		@Query("{ arg0 : ?#{[0]} }")
+		List<Person> findByUsingSpel(Object arg0);
 	}
 }
